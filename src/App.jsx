@@ -11,33 +11,46 @@ export default function App() {
   const [titulo, setTitulo] = useState('')
   const [filtro, setFiltro] = useState('all')
 
-  const tarefasVisiveis = tarefas
+  const tarefasVisiveis = tarefas.filter((tarefa) => {
+    if (filtro === 'pending') return tarefa.done === false
+    if (filtro === 'done') return tarefa.done === true
+    return true
+  })
+  const totalPendentes = tarefas.filter((tarefa) => !tarefa.done).length
 
   function adicionarTarefa(evento) {
     evento.preventDefault()
-    const novaTarefa = {
-      id: tarefas.length + 1,
-      title: titulo,
-      done: false,
-    }
+    const tituloLimpo = titulo.trim()
+    if (!tituloLimpo) return
 
-    setTarefas([...tarefas, novaTarefa])
+    setTarefas((tarefasAtuais) => {
+      const proximoId =
+        tarefasAtuais.reduce(
+          (maiorId, tarefa) => Math.max(maiorId, tarefa.id),
+          0,
+        ) + 1
+
+      return [
+        ...tarefasAtuais,
+        { id: proximoId, title: tituloLimpo, done: false },
+      ]
+    })
     setTitulo('')
   }
 
   function alternarTarefa(id) {
-    const tarefa = tarefas.find((item) => item.id === id)
-    if (tarefa) {
-      tarefa.done = !tarefa.done
-      setTarefas(tarefas)
-    }
+    setTarefas((tarefasAtuais) =>
+      tarefasAtuais.map((tarefa) =>
+        tarefa.id === id ? { ...tarefa, done: !tarefa.done } : tarefa,
+      ),
+    )
   }
 
   function excluirTarefa(id) {
-    setTarefas(tarefas.filter((tarefa) => tarefa.id != id))
+    setTarefas((tarefasAtuais) =>
+      tarefasAtuais.filter((tarefa) => tarefa.id !== id),
+    )
   }
-
-  const totalPendentes = tarefas.filter((tarefa) => tarefa.done === false).length
 
   return (
     <main className="aplicativo">
@@ -83,30 +96,45 @@ export default function App() {
         ) : (
           <ul className="lista-tarefas">
             {tarefasVisiveis.map((tarefa) => (
-              <li className="tarefa" key={tarefa.id}>
-                <label className={tarefa.done ? 'titulo-tarefa concluida' : 'titulo-tarefa'}>
-                  <input
-                    type="checkbox"
-                    checked={tarefa.done}
-                    onChange={() => alternarTarefa(tarefa.id)}
-                    aria-label={`Concluir ${tarefa.title}`}
-                  />
-                  <span>{tarefa.title}</span>
-                </label>
-                <button
-                  className="botao-excluir"
-                  type="button"
-                  onClick={() => excluirTarefa(tarefa.id)}
-                  aria-label={`Excluir ${tarefa.title}`}
-                >
-                  Excluir
-                </button>
-              </li>
+              <TarefaItem
+                key={tarefa.id}
+                tarefa={tarefa}
+                onAlternar={alternarTarefa}
+                onExcluir={excluirTarefa}
+              />
             ))}
           </ul>
         )}
       </section>
       <footer>Projeto de estudo — encontre os bugs antes de refatorar.</footer>
     </main>
+  )
+}
+
+function TarefaItem({ tarefa, onAlternar, onExcluir }) {
+  const classeTitulo = tarefa.done
+    ? 'titulo-tarefa concluida'
+    : 'titulo-tarefa'
+
+  return (
+    <li className="tarefa">
+      <label className={classeTitulo}>
+        <input
+          type="checkbox"
+          checked={tarefa.done}
+          onChange={() => onAlternar(tarefa.id)}
+          aria-label={`Concluir ${tarefa.title}`}
+        />
+        <span>{tarefa.title}</span>
+      </label>
+      <button
+        className="botao-excluir"
+        type="button"
+        onClick={() => onExcluir(tarefa.id)}
+        aria-label={`Excluir ${tarefa.title}`}
+      >
+        Excluir
+      </button>
+    </li>
   )
 }
